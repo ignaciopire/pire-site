@@ -1,41 +1,49 @@
-import type { Node } from '../types'
+import type { Node, Edge } from '../types'
 
 const WATER_LINE = 0.5
 
-/**
- * Recenter all nodes vertically so the center of mass sits exactly
- * at the water line (y = 0.5), simulating Archimedes' principle.
- */
-export function applyCenterOfMass(nodes: Node[]): Node[] {
-  const cy = nodes.reduce((sum, n) => sum + n.y, 0) / nodes.length
+export function applyCenterOfMass(nodes: Node[], fixedIndices: Set<number>): Node[] {
+  const movable = nodes.filter((_, i) => !fixedIndices.has(i))
+  if (movable.length === 0) return nodes
+  const cy = movable.reduce((sum, n) => sum + n.y, 0) / movable.length
   const dy = WATER_LINE - cy
-
-  return nodes.map((n) => ({
-    ...n,
-    y: Math.max(0.02, Math.min(0.98, n.y + dy)),
-  }))
+  return nodes.map((n, i) => {
+    if (fixedIndices.has(i)) return n
+    return { ...n, y: Math.max(0.02, Math.min(0.98, n.y + dy)) }
+  })
 }
 
-/**
- * Propagate a drag movement from one node to all others.
- * Influence decreases with the square of Euclidean distance.
- */
 export function propagateDrag(
   nodes: Node[],
+  edges: Edge[],
   movedIdx: number,
   dx: number,
   dy: number,
+  fixedIndices: Set<number>
 ): Node[] {
+  const neighbors = new Set<number>()
+  edges.forEach(([a, b]) => {
+    if (a === movedIdx) neighbors.add(b)
+    if (b === movedIdx) neighbors.add(a)
+  })
+
   return nodes.map((nd, i) => {
-    if (i === movedIdx) return nd
-    const ddx = nd.x - nodes[movedIdx].x
-    const ddy = nd.y - nodes[movedIdx].y
-    const dist2 = ddx * ddx + ddy * ddy
-    const factor = 1 / (1 + 10 * dist2)
-    return {
-      ...nd,
-      x: Math.max(0.02, Math.min(0.98, nd.x + dx * factor)),
-      y: Math.max(0.02, Math.min(0.98, nd.y + dy * factor)),
+    if (fixedIndices.has(i)) return nd // nodos fijos no se mueven
+    if (i === movedIdx) {
+      return {
+        ...nd,
+        x: Math.max(0.02, Math.min(0.98, nd.x + dx)),
+        y: Math.max(0.02, Math.min(0.98, nd.y + dy)),
+      }
     }
+    if (neighbors.has(i)) {
+      // factor 0.5 para un movimiento más suave
+      return {
+        ...nd,
+        x: Math.max(0.02, Math.min(0.98, nd.x + dx * 0.5)),
+        y: Math.max(0.02, Math.min(0.98, nd.y + dy * 0.5)),
+      }
+    }
+    return nd
   })
 }
