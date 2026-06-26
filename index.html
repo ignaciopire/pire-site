@@ -1,17 +1,586 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PIRE — Consultoría en cambio organizacional</title>
-    <meta name="description" content="Lo que sostiene un sistema rara vez es lo que más se ve. PIRE es una consultoría en cambio organizacional." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIRE | Consultoría de Cambio Organizacional</title>
+    
+    <style>
+        :root {
+            /* Degradé invertido arriba y nuevo color abisal abajo */
+            --sky-base: #3b5c6f;
+            --sky-4: #37586b; 
+            --sky-3: #2b4a57;
+            --sky-2: #1c323f;
+            --sky-top: #030710;
+            --ocean-bottom: #02050E;
+            
+            --text-main: #f9fafb;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* Tipografía del sistema e interfaz oficial de GitHub */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background-color: var(--ocean-bottom);
+        }
+
+        .background-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Capa de interfaz fija en el margen izquierdo sin contenedores rígidos */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 3rem;
+        }
+
+        .interactive-element {
+            pointer-events: auto;
+        }
+
+        /* Título PIRE 100% más grande con peso sutil */
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .narrative-flow {
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Textos con posicionamiento absoluto para lograr equidistancia real vía JS */
+        .surface-text {
+            position: absolute;
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text-main);
+            transform: translateY(-100%);
+            margin-bottom: 0;
+        }
+
+        .deep-text-block {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .depth-text {
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        /* Menor jerarquía para la descripción conceptual */
+        .description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-weight: 400;
+            max-width: 380px;
+        }
+
+        /* Estilos del bloque de contacto empujado abajo a la derecha */
+        .footer-contact {
+            margin-top: auto;
+            align-self: flex-end;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+            transform: translateX(calc(100vw - 440px - 6rem));
+        }
+
+        .contact-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
+        .contact-mail {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 400;
+            background: none;      /* Reseteo de estilos de botón nativo */
+            border: none;          /* Reseteo de estilos de botón nativo */
+            padding: 0;            /* Reseteo de estilos de botón nativo */
+            cursor: pointer;       /* Fuerza el cursor de mano */
+            font-family: inherit;  /* Hereda la tipografía de sistema */
+            transition: color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .contact-mail:hover {
+            color: var(--accent);
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .ui-layer { padding: 1.5rem; overflow-y: auto; pointer-events: auto; position: relative; }
+            .narrative-flow { max-width: 100%; height: auto !important; }
+            .surface-text, .deep-text-block { position: relative; top: auto !important; transform: none; }
+            .surface-text { margin-top: 2rem; margin-bottom: 2rem; }
+            .footer-contact { margin-top: 3rem; align-self: flex-start; align-items: flex-start; transform: none; }
+            canvas { pointer-events: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-gradient" id="bgGradient"></div>
+    <canvas id="icebergCanvas"></canvas>
+
+    <div id="tooltip" style="position: absolute; background: #161b22; border: 1px solid #30363d; padding: 0.75rem 1rem; border-radius: 6px; pointer-events: none; opacity: 0; z-index: 100; max-width: 260px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); font-size: 0.75rem; color: #8b949e;">
+        <h4 id="tooltip-title" style="font-size: 0.9rem; font-weight: 600; color: #58a6ff; margin-bottom: 0.25rem;">Concepto</h4>
+        <p id="tooltip-desc">Descripción.</p>
+    </div>
+
+    <div class="ui-layer">
+        <div class="narrative-flow interactive-element" style="height: calc(100vh - 6rem);">
+            <header>
+                <h1>PIRE</h1>
+            </header>
+
+            <p class="surface-text" id="textSurface">Los síntomas asoman en la superficie.</p>
+
+            <div class="deep-text-block" id="textDepth">
+                <p class="depth-text">Las causas se encuentran en la profundidad.</p>
+                <p class="description">
+                    Trabajamos con las personas para impactar sistemas complejos. Hacemos explícita la estructura y sus emergentes para impulsar transformaciones reales y orgánicas.
+                </p>
+            </div>
+
+            <div class="footer-contact">
+                <span class="contact-label" id="contactLabel">CONTACTO</span>
+                <button onclick="copyEmailToClipboard()" class="contact-mail" id="contactMail" title="Click para copiar email">contacto@pire.ar</button>
+            </div>       
+            
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script>
+        const canvas = document.getElementById('icebergCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+        const bgGradientDiv = document.getElementById('bgGradient');
+
+        let width, height, waterLineY, dpr;
+        let simulation;
+        let grabbedNode = null;
+        let hoveredNode = null;
+        let stars = [];
+
+        const descriptions = {
+            "Sistema": "La red completa de relaciones donde el todo transforma la suma de las partes.",
+            "Proceso": "Flujos visibles de trabajo que coordinan las tareas operativas diarias.",
+            "Información": "Los flujos de datos que viajan o se estancan estructuralmente.",
+            "Roles": "Expectativas oficiales y responsabilidades asignadas formalmente.",
+            "Estructura": "El organigrama visible, jerarquías y arquitectura del negocio.",
+            "Cultura": "Las reglas invisibles y valores reales que dictan el comportamiento diario.",
+            "Poder": "Dinámicas de influencia informal y toma de decisiones fuera de los canales.",
+            "Incentivos": "Los motores reales que impulsan u orientan las prioridades de los equipos.",
+            "Comunicación": "Intercambios ocultos, ruidos internos, interpretaciones y supuestos.",
+            "Confianza": "El lubricante relacional que reduce la fricción y acelera la delegación.",
+            "Propósito": "La brújula profunda que unifica y dota de sentido a la operación.",
+            "Decisiones": "Los criterios reales que definen el rumbo, más allá de la burocracia.",
+            "Adaptación": "Capacidad resiliente para responder al entorno cambiando sin romperse.",
+            "Aprendizaje": "Mecanismos por los cuales la empresa capitaliza fallas y evoluciona."
+        };
+
+        const nodes = [
+            { id: "Sistema", type: "visible" },         
+            { id: "Proceso", type: "visible" },         
+            { id: "Información", type: "visible" },     
+            { id: "Roles", type: "visible" },           
+            { id: "Estructura", type: "visible" },      
+            { id: "Cultura", type: "invisible" },       
+            { id: "Poder", type: "invisible" },         
+            { id: "Incentivos", type: "invisible" },    
+            { id: "Comunicación", type: "invisible" },  
+            { id: "Confianza", type: "invisible" },     
+            { id: "Propósito", type: "invisible" },     
+            { id: "Decisiones", type: "invisible" },    
+            { id: "Adaptación", type: "invisible" },    
+            { id: "Aprendizaje", type: "invisible" }    
+        ];
+
+        const triangles = [
+            [0, 1, 5], [1, 2, 5], [2, 5, 8], [2, 6, 8], [2, 3, 6], [3, 6, 9],
+            [3, 7, 9], [3, 4, 7], [4, 7, 11], [5, 8, 10], [6, 8, 12], [6, 9, 12],
+            [7, 9, 11], [8, 10, 12], [9, 11, 13], [9, 12, 13], [10, 12, 13],
+            [0, 5, 10], [4, 11, 13]
+        ];
+
+        const outerPerimeterIndices = [0, 1, 2, 3, 4, 11, 13, 10, 0];
+        const colorsAbove = ["#CAE6EF", "#B2D3E5", "#82B1C6"];
+        const colorsBelow = ["#137BA1", "#175878", "#124A63"];
+
+        const links = [];
+        const linkSet = new Set();
+        triangles.forEach(t => {
+            [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]].forEach(p => {
+                const key = Math.min(p[0], p[1]) + "-" + Math.max(p[0], p[1]);
+                if (!linkSet.has(key)) {
+                    linkSet.add(key);
+                    links.push({ source: p[0], target: p[1] });
+                }
+            });
+        });
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            waterLineY = height * 0.42;
+
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            ctx.resetTransform();
+            ctx.scale(dpr, dpr);
+
+            // Inversión del degradé superior y fijado del fondo abisal
+            const pctWater = (waterLineY / height) * 100;
+            bgGradientDiv.style.background = `linear-gradient(to bottom, 
+                #02050E 0%, 
+                #030710 ${pctWater * 0.4 }%, 
+                #1c323f ${pctWater * 0.9}%, 
+                #2b4a57 ${pctWater * 0.99}%, 
+                #37586b ${pctWater}%, 
+                #030710 ${pctWater}%, 
+                #030710 100%)`;
+
+            // Reposicionar textos de forma matemática y equidistante en desktop
+            if (width > 768) {
+                const distanciaDeseada = 40;
+                const textSurfaceElement = document.getElementById('textSurface');
+                const textDepthElement = document.getElementById('textDepth');
+                if (textSurfaceElement && textDepthElement) {
+                    textSurfaceElement.style.top = `${waterLineY - distanciaDeseada}px`;
+                    textDepthElement.style.top = `${waterLineY + distanciaDeseada}px`;
+                }
+            }
+
+            const centerX = width * 0.68;
+            nodes.forEach((node, i) => {
+                if (!node.x) {
+                    if (node.type === "visible") {
+                        node.x = (centerX - 100) + (i * 50);
+                        node.y = waterLineY - 110 + (Math.sin(i) * 12);
+                    } else {
+                        if (i >= 5 && i <= 9) {
+                            node.x = (centerX - 100) + ((i - 5) * 50);
+                            node.y = waterLineY + 90;
+                        } else {
+                            node.x = (centerX - 80) + ((i - 10) * 55);
+                            node.y = waterLineY + 210;
+                        }
+                    }
+                    node.homeX = node.x;
+                    node.homeY = node.y;
+                }
+            });
+
+            stars = [];
+            const totalStars = 50;
+            const skyLimitY = waterLineY * 0.5;
+
+            for (let i = 0; i < totalStars; i++) {
+                const starX = Math.random() * width;
+                const starY = Math.random() * skyLimitY;
+                const ratio = 1 - (starY / skyLimitY);
+                const opacity = Math.pow(ratio, 2.0) * 0.35;
+                stars.push({ x: starX, y: starY, opacity: opacity });
+            }
+
+            initSimulation();
+        }
+
+        function initSimulation() {
+            if (simulation) simulation.stop();
+
+            simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.index).distance(110).strength(0.015))
+                .force("charge", d3.forceManyBody().strength(-100))
+                .force("collide", d3.forceCollide(42))
+                .alphaTarget(0.02)
+                .on("tick", handleSystemPhysics);
+        }
+
+        function handleSystemPhysics() {
+            let totalX = 0, totalY = 0;
+            nodes.forEach(n => { totalX += n.x; totalY += n.y; });
+            const centerMassX = totalX / nodes.length;
+            const centerMassY = totalY / nodes.length;
+
+            const targetGlobalY = waterLineY + 50; 
+            const targetGlobalX = width * 0.68;
+
+            const diffY = targetGlobalY - centerMassY;
+            const diffX = targetGlobalX - centerMassX;
+
+            let torque = 0;
+            nodes.forEach(n => {
+                const rx = n.x - centerMassX;
+                const buoyancyForce = (n.y > waterLineY) ? -0.008 : 0.005;
+                torque += rx * buoyancyForce;
+            });
+
+            const angleVelocity = Math.max(-0.01, Math.min(0.01, torque * 0.00025));
+
+            nodes.forEach(n => {
+                if (n !== grabbedNode) {
+                    n.y += diffY * 0.015;
+                    n.x += diffX * 0.01;
+
+                    const rx = n.x - centerMassX;
+                    const ry = n.y - centerMassY;
+                    n.x += -ry * angleVelocity;
+                    n.y += rx * angleVelocity;
+
+                    n.x += (n.homeX - n.x) * 0.001; 
+                    n.y += (n.homeY - n.y) * 0.001;
+                }
+            });
+
+            drawFrame();
+        }
+
+        function getUniqueTriangleColor(tNodes, isAboveWater) {
+            const sum = tNodes[0] + tNodes[1] + tNodes[2];
+            return isAboveWater ? colorsAbove[sum % colorsAbove.length] : colorsBelow[sum % colorsBelow.length];
+        }
+
+        function drawSplitTriangle(ctx, p1, p2, p3, tNodes) {
+            const pts = [p1, p2, p3];
+            const above = [], below = [];
+
+            pts.forEach(p => { if (p.y <= waterLineY) above.push(p); else below.push(p); });
+
+            if (above.length === 3) {
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, true);
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.closePath(); ctx.fill();
+                return;
+            }
+            if (below.length === 3) {
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, false);
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.closePath(); ctx.fill();
+                return;
+            }
+
+            const interpolate = (pA, pB) => {
+                const t = (waterLineY - pA.y) / (pB.y - pA.y);
+                return { x: pA.x + t * (pB.x - pA.x), y: waterLineY };
+            };
+
+            if (above.length === 1) {
+                const A = above[0], B1 = below[0], B2 = below[1];
+                const I1 = interpolate(A, B1), I2 = interpolate(A, B2);
+
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, true);
+                ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(I1.x, I1.y); ctx.lineTo(I2.x, I2.y); ctx.closePath(); ctx.fill();
+
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, false);
+                ctx.beginPath(); ctx.moveTo(I1.x, I1.y); ctx.lineTo(B1.x, B1.y); ctx.lineTo(B2.x, B2.y); ctx.lineTo(I2.x, I2.y); ctx.closePath(); ctx.fill();
+            } else {
+                const A1 = above[0], A2 = above[1], B = below[0];
+                const I1 = interpolate(A1, B), I2 = interpolate(A2, B);
+
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, true);
+                ctx.beginPath(); ctx.moveTo(A1.x, A1.y); ctx.lineTo(A2.x, A2.y); ctx.lineTo(I2.x, I2.y); ctx.lineTo(I1.x, I1.y); ctx.closePath(); ctx.fill();
+
+                ctx.fillStyle = getUniqueTriangleColor(tNodes, false);
+                ctx.beginPath(); ctx.moveTo(B.x, B.y); ctx.lineTo(I1.x, I1.y); ctx.lineTo(I2.x, I2.y); ctx.closePath(); ctx.fill();
+            }
+        }
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // Estrellas
+            stars.forEach((star, index) => {
+                ctx.fillStyle = `rgba(202, 230, 239, ${star.opacity})`;
+                ctx.beginPath(); ctx.arc(star.x, star.y, 1.2, 0, 2 * Math.PI); ctx.fill();
+
+                for (let j = index + 1; j < stars.length; j++) {
+                    const other = stars[j];
+                    const dist = Math.hypot(star.x - other.x, star.y - other.y);
+                    if (dist < 90) {
+                        const lineOpacity = (1 - (dist / 90)) * star.opacity * 0.35;
+                        ctx.strokeStyle = `rgba(202, 230, 239, ${lineOpacity})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath(); ctx.moveTo(star.x, star.y); ctx.lineTo(other.x, other.y); ctx.stroke();
+                    }
+                }
+            });
+
+            // Polígonos Iceberg
+            triangles.forEach((t) => {
+                const p1 = nodes[t[0]], p2 = nodes[t[1]], p3 = nodes[t[2]];
+                if(p1 && p2 && p3) drawSplitTriangle(ctx, p1, p2, p3, t);
+            });
+
+            // Conexiones estructurales
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 0.75;
+            links.forEach(link => {
+                ctx.beginPath(); ctx.moveTo(link.source.x, link.source.y); ctx.lineTo(link.target.x, link.target.y); ctx.stroke();
+            });
+
+            // Contorno perimetral
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.35)';
+            ctx.lineWidth = 1.25;
+            ctx.beginPath();
+            outerPerimeterIndices.forEach((nodeIdx, i) => {
+                const n = nodes[nodeIdx];
+                if(i === 0) ctx.moveTo(n.x, n.y); else ctx.lineTo(n.x, n.y);
+            });
+            ctx.closePath(); ctx.stroke();
+
+            // Línea de Flotación Infinita Visible de extremo a extremo
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath(); ctx.moveTo(0, waterLineY); ctx.lineTo(width, waterLineY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Nodos e interacción
+            nodes.forEach(node => {
+                const isHovered = grabbedNode === node || (hoveredNode && hoveredNode.id === node.id);
+                ctx.fillStyle = isHovered ? '#58a6ff' : (node.type === "visible" ? '#030710' : '#ffffff');
+                ctx.strokeStyle = isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = isHovered ? 1.75 : 1;
+
+                ctx.beginPath(); ctx.arc(node.x, node.y, isHovered ? 5.5 : 3.5, 0, 2 * Math.PI);
+                ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.55)';
+                ctx.font = isHovered ? '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' : '400 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                ctx.fillText(node.id, Math.round(node.x + 12), Math.round(node.y + 3.5));
+            });
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function findNode(pos) { return nodes.find(node => Math.hypot(node.x - pos.x, node.y - pos.y) < 25); }
+
+        function handleMove(e) {
+            const pos = getMousePos(e);
+            if (grabbedNode) {
+                grabbedNode.fx = pos.x; grabbedNode.fy = pos.y;
+                simulation.alphaTarget(0.4).restart();
+            } else {
+                const node = findNode(pos);
+                if (node !== hoveredNode) {
+                    hoveredNode = node;
+                    if (node) {
+                        document.body.style.cursor = 'grab'; tooltip.style.opacity = 1;
+                        document.getElementById('tooltip-title').innerText = node.id;
+                        document.getElementById('tooltip-desc').innerText = descriptions[node.id] || "";
+                    } else {
+                        document.body.style.cursor = 'default'; tooltip.style.opacity = 0;
+                    }
+                }
+                if (node) { tooltip.style.left = `${pos.x + 15}px`; tooltip.style.top = `${pos.y - 15}px`; }
+            }
+        }
+
+        function handleStart(e) {
+            const pos = getMousePos(e); const node = findNode(pos);
+            if (node) { grabbedNode = node; document.body.style.cursor = 'grabbing'; node.fx = node.x; node.fy = node.y; }
+        }
+
+        function handleEnd() {
+            if (grabbedNode) { document.body.style.cursor = 'grab'; grabbedNode.fx = null; grabbedNode.fy = null; grabbedNode = null; simulation.alphaTarget(0.02); }
+        }
+
+        window.addEventListener('resize', resize);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchmove', handleMove, { passive: true });
+        canvas.addEventListener('touchstart', handleStart, { passive: true });
+        window.addEventListener('touchend', handleEnd);
+
+        resize();
+
+        // --- FUNCIÓN PREMIUM DE COPIADO AL PORTAPAPELES ---
+        function copyEmailToClipboard() {
+            const emailStr = "contacto@pire.ar";
+            
+            // API nativa de navegación para copiar texto de forma segura
+            navigator.clipboard.writeText(emailStr).then(() => {
+                const mailBtn = document.getElementById('contactMail');
+                const labelSpan = document.getElementById('contactLabel');
+                
+                if (mailBtn && labelSpan) {
+                    // Feedback visual instantáneo
+                    mailBtn.innerText = "¡Copiado!";
+                    mailBtn.style.color = "var(--accent)";
+                    labelSpan.style.opacity = "0.5";
+                    
+                    // Retorno suave al estado original después de 2 segundos
+                    setTimeout(() => {
+                        mailBtn.innerText = emailStr;
+                        mailBtn.style.color = "var(--text-main)";
+                        labelSpan.style.opacity = "1";
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error("No se pudo copiar el correo: ", err);
+            });
+        }
+    </script>
+</body>
 </html>
