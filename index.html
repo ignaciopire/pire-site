@@ -9,7 +9,7 @@
         :root {
             /* Degradé invertido arriba y nuevo color abisal abajo */
             --sky-base: #3b5c6f;
-            --sky-4: #37586b; 
+            --sky-4: #37586b;
             --sky-3: #2b4a57;
             --sky-2: #1c323f;
             --sky-top: #030710;
@@ -323,13 +323,13 @@
 
             const pctWater = (waterLineY / height) * 100;
             bgGradientDiv.style.background = `linear-gradient(to bottom, 
-                #3b5c6f 0%, 
-                #37586b ${pctWater * 0.3}%, 
-                #2b4a57 ${pctWater * 0.6}%, 
-                #1c323f ${pctWater * 0.85}%, 
-                #030710 ${pctWater}%, 
-                #030710 ${pctWater}%, 
-                #02050E 100%)`;
+               #02050E 0%,
+               #030710 ${pctWater * 0.4   }%,
+               #1c323f ${pctWater * 0.9}%,
+               #2b4a57 ${pctWater * 0.99}%,
+               #37586b ${pctWater}%,
+               #030710 ${pctWater}%,
+               #030710 100%)`;
 
             // Reposicionar textos de forma matemática y equidistante SOLO en desktop
             if (!isMobile) {
