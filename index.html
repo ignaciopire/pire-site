@@ -43,7 +43,7 @@
             pointer-events: none;
         }
 
-        /* Capa de interfaz de usuario */
+        /* Capa de interfaz de usuario fija en desktop */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -104,7 +104,7 @@
             color: var(--text-muted);
             line-height: 1.5;
             font-weight: 400;
-            max-width: 450px; 
+            max-width: 380px; 
         }
 
         .footer-contact {
@@ -150,26 +150,29 @@
             z-index: 1;
         }
 
-        /* RESOLUCIÓN DEFINITIVA PARA PANTALLAS ANGOSTAS (CELULARES) */
+        /* RESOLUCIÓN DEFINITIVA DE CONTROL DE ESPACIO EN CELULARES */
         @media (max-width: 768px) {
             body { 
-                overflow-y: auto !important; /* Habilitar scroll nativo obligatorio */
+                overflow-y: auto !important; /* Habilitar scroll de página */
                 overflow-x: hidden;
             } 
-            
+
+            /* El fondo se acopla a la altura variable total */
             .background-gradient {
-                height: 200vh; /* Extender el degradé para cubrir el scroll */
+                position: fixed;
+                height: 100vh;
             }
 
+            /* Bloque de texto con fondo plano para bloquear al canvas */
             .ui-layer { 
                 position: relative; 
-                padding: 3rem 1.5rem 1rem 1.5rem; 
+                padding: 2.5rem 1.5rem 1.5rem 1.5rem; 
                 height: auto; 
                 min-height: auto;
                 pointer-events: auto; 
                 display: block; 
-                background-color: #030710; /* Color sólido arriba para que el iceberg nunca ensucie el texto */
-                z-index: 20;
+                background-color: #030710; 
+                z-index: 20; /* Prioridad de visualización sobre cualquier gráfico */
             }
             
             .narrative-flow { 
@@ -186,34 +189,34 @@
             }
             
             .surface-text { 
-                margin-top: 2rem; 
-                margin-bottom: 2rem; 
+                margin-top: 1.5rem; 
+                margin-bottom: 1.5rem; 
             }
             
             .deep-text-block {
-                margin-bottom: 2rem;
+                margin-bottom: 1.5rem;
             }
             
             .description { 
                 max-width: 100%; 
             }
             
-            /* El contacto queda al final del bloque de texto superior, limpio y legible */
             .footer-contact { 
                 margin-top: 2rem; 
-                margin-bottom: 2rem;
+                margin-bottom: 1.5rem;
                 align-self: flex-start; 
                 align-items: flex-start; 
                 transform: none; 
             }
 
-            /* El canvas pasa por debajo de la UI de texto ocupando su propio espacio inferior */
+            /* El canvas se comporta como un bloque nativo empujado abajo por el flujo HTML */
             canvas {
                 position: relative;
                 display: block;
-                height: 65vh !important; /* Altura controlada exclusiva para el Iceberg */
+                height: 50vh !important; /* Altura controlada y aislada para el Iceberg */
+                width: 100% !important;
                 z-index: 1;
-                margin-top: 0;
+                background-color: #030710;
             }
         }
     </style>
@@ -322,13 +325,13 @@
         });
 
         function resize() {
+            const isMobile = window.innerWidth <= 768;
+            
+            // CAMBIO CLAVE: Leer el tamaño real en pixeles del contenedor físico del canvas
             width = canvas.clientWidth;
             height = canvas.clientHeight;
             
-            const isMobile = window.innerWidth <= 768;
-            
-            // En mobile el agua corta a la mitad del propio bloque inferior del canvas
-            waterLineY = isMobile ? height * 0.45 : height * 0.42;
+            waterLineY = isMobile ? height * 0.40 : height * 0.42;
 
             dpr = window.devicePixelRatio || 1;
             canvas.width = width * dpr;
@@ -337,11 +340,8 @@
             ctx.resetTransform();
             ctx.scale(dpr, dpr);
 
-            // Sincronizar degradé
-            const totalHeightForGradient = isMobile ? window.innerHeight * 2 : height;
-            const absoluteWaterY = isMobile ? window.innerHeight + waterLineY : waterLineY;
-            const pctWater = (absoluteWaterY / totalHeightForGradient) * 100;
-            
+            // Sincronizar degradé lineal adaptativo
+            const pctWater = isMobile ? 50 : (waterLineY / height) * 100;
             bgGradientDiv.style.background = `linear-gradient(to bottom, 
                 #02050E 0%, 
                 #030710 ${pctWater * 0.4}%, 
@@ -362,21 +362,21 @@
             }
 
             const centerX = width * 0.5;
-            const nodeSpacing = isMobile ? 22 : 50; 
+            const nodeSpacing = isMobile ? 20 : 50; 
 
             nodes.forEach((node, i) => {
-                if (!node.x || isMobile) { // Forzar recálculo en mobile
+                if (!node.x || isMobile) { 
                     const baseCenterX = isMobile ? centerX : width * 0.68;
-                    if (node.type === "visible" ? true : false) {
+                    if (node.type === "visible") {
                         node.x = (baseCenterX - (nodeSpacing * 2)) + (i * nodeSpacing);
-                        node.y = waterLineY - (isMobile ? 35 : 110) + (Math.sin(i) * 12);
+                        node.y = waterLineY - (isMobile ? 30 : 110) + (Math.sin(i) * 12);
                     } else {
                         if (i >= 5 && i <= 9) {
                             node.x = (baseCenterX - (nodeSpacing * 2)) + ((i - 5) * nodeSpacing);
-                            node.y = waterLineY + (isMobile ? 30 : 90);
+                            node.y = waterLineY + (isMobile ? 25 : 90);
                         } else {
                             node.x = (baseCenterX - (nodeSpacing * 1.5)) + ((i - 10) * (nodeSpacing * 1.1));
-                            node.y = waterLineY + (isMobile ? 65 : 210);
+                            node.y = waterLineY + (isMobile ? 55 : 210);
                         }
                     }
                     if(!isMobile) {
@@ -387,8 +387,8 @@
             });
 
             stars = [];
-            const totalStars = isMobile ? 15 : 50;
-            const skyLimitY = isMobile ? height * 0.3 : waterLineY * 0.5;
+            const totalStars = isMobile ? 12 : 50;
+            const skyLimitY = isMobile ? height * 0.35 : waterLineY * 0.5;
 
             for (let i = 0; i < totalStars; i++) {
                 const starX = Math.random() * width;
@@ -399,8 +399,8 @@
             }
 
             if (simulation) {
-                simulation.force("link").distance(isMobile ? 45 : 110);
-                simulation.force("collide", d3.forceCollide(isMobile ? 18 : 42));
+                simulation.force("link").distance(isMobile ? 40 : 110);
+                simulation.force("collide", d3.forceCollide(isMobile ? 16 : 42));
             }
 
             initSimulation();
@@ -410,9 +410,9 @@
             if (simulation) simulation.stop();
 
             simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.index).distance(window.innerWidth <= 768 ? 45 : 110).strength(0.015))
+                .force("link", d3.forceLink(links).id(d => d.index).distance(window.innerWidth <= 768 ? 40 : 110).strength(0.015))
                 .force("charge", d3.forceManyBody().strength(-100))
-                .force("collide", d3.forceCollide(window.innerWidth <= 768 ? 18 : 42))
+                .force("collide", d3.forceCollide(window.innerWidth <= 768 ? 16 : 42))
                 .alphaTarget(0.02)
                 .on("tick", handleSystemPhysics);
         }
@@ -424,7 +424,7 @@
             const centerMassY = totalY / nodes.length;
 
             const isMobile = window.innerWidth <= 768;
-            const targetGlobalY = waterLineY + (isMobile ? 15 : 50); 
+            const targetGlobalY = waterLineY + (isMobile ? 10 : 50); 
             const targetGlobalX = isMobile ? width * 0.5 : width * 0.68;
 
             const diffY = targetGlobalY - centerMassY;
@@ -509,7 +509,9 @@
 
         function drawFrame() {
             ctx.clearRect(0, 0, width, height);
-            
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
             // Estrellas
             stars.forEach((star, index) => {
                 ctx.fillStyle = `rgba(202, 230, 239, ${star.opacity})`;
@@ -557,7 +559,7 @@
             ctx.beginPath(); ctx.moveTo(0, waterLineY); ctx.lineTo(width, waterLineY); ctx.stroke();
             ctx.setLineDash([]);
 
-            // Nodos e interacción controlada
+            // Nodos adaptados a pantallas angostas
             const isMobile = window.innerWidth <= 768;
             nodes.forEach(node => {
                 const isHovered = grabbedNode === node || (hoveredNode && hoveredNode.id === node.id);
@@ -565,7 +567,7 @@
                 ctx.strokeStyle = isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.4)';
                 ctx.lineWidth = isHovered ? 1.75 : 1;
 
-                ctx.beginPath(); ctx.arc(node.x, node.y, isHovered ? (isMobile ? 4.5 : 5.5) : (isMobile ? 2.5 : 3.5), 0, 2 * Math.PI);
+                ctx.beginPath(); ctx.arc(node.x, node.y, isHovered ? (isMobile ? 4.2 : 5.5) : (isMobile ? 2.5 : 3.5), 0, 2 * Math.PI);
                 ctx.fill(); ctx.stroke();
 
                 ctx.fillStyle = isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.55)';
