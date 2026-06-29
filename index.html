@@ -617,9 +617,29 @@
             }
         }
 
+        // CORRECCIÓN: Activación estricta de información y físicas global al hacer click o tap
         function handleStart(e) {
-            const pos = getMousePos(e); const node = findNode(pos);
-            if (node) { grabbedNode = node; document.body.style.cursor = 'grabbing'; node.fx = node.x; node.fy = node.y; }
+            if (e.target.closest('#contactMail')) return; // Evitar pisar el botón copiar mail
+            
+            const pos = getMousePos(e); 
+            const node = findNode(pos);
+            
+            if (node) { 
+                grabbedNode = node; 
+                hoveredNode = node;
+                document.body.style.cursor = 'grabbing'; 
+                node.fx = node.x; node.fy = node.y; 
+                
+                // Desplegar información inmediatamente (crucial para móviles)
+                tooltip.style.opacity = 1;
+                document.getElementById('tooltip-title').innerText = node.id;
+                document.getElementById('tooltip-desc').innerText = descriptions[node.id] || "";
+                tooltip.style.left = `${pos.x + 15}px`; tooltip.style.top = `${pos.y - 15}px`;
+            } else {
+                // Si hace click afuera de un nodo, se limpia el estado
+                tooltip.style.opacity = 0;
+                hoveredNode = null;
+            }
         }
 
         function handleEnd() {
@@ -644,12 +664,13 @@
             }).catch(err => { console.error("Error al copiar: ", err); });
         }
 
+        // CORRECCIÓN: Eventos vinculados a window para evitar bloqueos por capas de texto superpuestas
         window.addEventListener('resize', resize);
-        canvas.addEventListener('mousemove', handleMove);
-        canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mousedown', handleStart);
         window.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('touchmove', handleMove, { passive: true });
-        canvas.addEventListener('touchstart', handleStart, { passive: true });
+        window.addEventListener('touchmove', handleMove, { passive: true });
+        window.addEventListener('touchstart', handleStart, { passive: true });
         window.addEventListener('touchend', handleEnd);
 
         resize();
