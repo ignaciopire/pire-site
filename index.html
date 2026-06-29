@@ -232,7 +232,7 @@
 
         <div id="blockDepth">
             <div class="deep-text-block">
-                <p class="depth-text">Las causas se encuentran en la profundidad.</p>
+                <p class="depth-text">Las causas se encuentran in la profundidad.</p>
                 <p class="description">
                     Trabajamos con las personas para impactar sistemas complejos. Hacemos explícita la estructura y sus emergentes para impulsar transformaciones reales y orgánicas.
                 </p>
@@ -274,7 +274,7 @@
             "Incentivos": "Los motores reales que impulsan u orientan las prioridades de los equipos.",
             "Comunicación": "Intercambios ocultos, ruidos internos, interpretaciones y supuestos.",
             "Confianza": "El lubricante relacional que reduce la ficción y acelera la delegación.",
-            "Propósito": "La brújula profunda que unifica y dota de sentido a la operation.",
+            "Propósito": "La brújula profunda que unifica y dota de sentido a la operación.",
             "Decisiones": "Los criterios reales que definen el rumbo, más allá de la burocracia.",
             "Adaptación": "Capacidad resiliente para responder al entorno cambiando sin romperse.",
             "Aprendizaje": "Mecanismos por los cuales la empresa capitaliza fallas y evoluciona."
@@ -329,7 +329,7 @@
             ctx.resetTransform();
             ctx.scale(dpr, dpr);
 
-            const totalHeightGradient = isMobile ? window.innerHeight * 1.8 : window.innerHeight;
+            const totalHeightGradient = isMobile ? window.innerHeight * 1.8 : height;
             const currentAbsWaterLine = isMobile ? canvas.getBoundingClientRect().top + waterLineY : waterLineY;
             const pctWater = (currentAbsWaterLine / totalHeightGradient) * 100;
             bgGradientDiv.style.background = `linear-gradient(to bottom, 
@@ -530,6 +530,21 @@
 
             const isMobile = window.innerWidth <= 768;
 
+            // NUEVO: En mobile recalculamos dinámicamente el degradé en cada frame del scroll
+            if (isMobile) {
+                const totalHeightGradient = window.innerHeight * 1.8;
+                const currentAbsWaterLine = canvas.getBoundingClientRect().top + waterLineY;
+                const pctWater = (currentAbsWaterLine / totalHeightGradient) * 100;
+                bgGradientDiv.style.background = `linear-gradient(to bottom, 
+                    #02050E 0%, 
+                    #030710 ${pctWater * 0.4}%, 
+                    #1c323f ${pctWater * 0.9}%, 
+                    #2b4a57 ${pctWater * 0.99}%, 
+                    #37586b ${pctWater}%, 
+                    #030710 ${pctWater}%, 
+                    #030710 100%)`;
+            }
+
             stars.forEach((star, index) => {
                 ctx.fillStyle = `rgba(202, 230, 239, ${star.opacity})`;
                 ctx.beginPath(); ctx.arc(star.x, star.y, 1.2, 0, 2 * Math.PI); ctx.fill();
@@ -566,6 +581,7 @@
             });
             ctx.closePath(); ctx.stroke();
 
+            // Línea de Flotación Infinita Visible (Acompaña al canvas perfectamente)
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 1;
             ctx.setLineDash([6, 6]);
@@ -617,9 +633,8 @@
             }
         }
 
-        // CORRECCIÓN: Activación estricta de información y físicas global al hacer click o tap
         function handleStart(e) {
-            if (e.target.closest('#contactMail')) return; // Evitar pisar el botón copiar mail
+            if (e.target.closest('#contactMail')) return; 
             
             const pos = getMousePos(e); 
             const node = findNode(pos);
@@ -630,13 +645,11 @@
                 document.body.style.cursor = 'grabbing'; 
                 node.fx = node.x; node.fy = node.y; 
                 
-                // Desplegar información inmediatamente (crucial para móviles)
                 tooltip.style.opacity = 1;
                 document.getElementById('tooltip-title').innerText = node.id;
                 document.getElementById('tooltip-desc').innerText = descriptions[node.id] || "";
                 tooltip.style.left = `${pos.x + 15}px`; tooltip.style.top = `${pos.y - 15}px`;
             } else {
-                // Si hace click afuera de un nodo, se limpia el estado
                 tooltip.style.opacity = 0;
                 hoveredNode = null;
             }
@@ -664,14 +677,18 @@
             }).catch(err => { console.error("Error al copiar: ", err); });
         }
 
-        // CORRECCIÓN: Eventos vinculados a window para evitar bloqueos por capas de texto superpuestas
         window.addEventListener('resize', resize);
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('mousedown', handleStart);
         window.addEventListener('mouseup', handleEnd);
-        window.addEventListener('touchmove', handleMove, { passive: true });
-        window.addEventListener('touchstart', handleStart, { passive: true });
+        canvas.addEventListener('touchmove', handleMove, { passive: true });
+        canvas.addEventListener('touchstart', handleStart, { passive: true });
         window.addEventListener('touchend', handleEnd);
+        
+        // NUEVO: Escuchar el evento scroll en mobile para redibujar la coincidencia del horizonte al instante
+        window.addEventListener('scroll', () => {
+            if (window.innerWidth <= 768) drawFrame();
+        }, { passive: true });
 
         resize();
     </script>
